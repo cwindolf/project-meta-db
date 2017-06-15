@@ -1,4 +1,5 @@
 DB_TYPE  = 'postgres'
-HOST     = 'localhost'
-USER     = 'test_user'
-DATABASE = 'test_db'
+HOST     = '127.0.0.1'
+USER     = 'posedatabase'
+DATABASE = 'posedatabase'
+PASSWORD = 'serrelab'

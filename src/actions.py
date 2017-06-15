@@ -1,14 +1,14 @@
 from pony.orm import *
 from datetime import datetime
 from src.schema import db, DBMeta, Project
-from config import DB_TYPE, HOST, USER, DATABASE
+from config import DB_TYPE, HOST, USER, DATABASE, PASSWORD
 
-db.bind(DB_TYPE, host=HOST, user=USER, database=DATABASE)
+db.bind(DB_TYPE, host=HOST, user=USER, database=DATABASE, password=PASSWORD)
 db.generate_mapping()
 
 
 @db_session
-def add_project(name, db_metas=None):
+def add_project(name, d_b_metas=None):
 	'''add_project
 
 	Add a new project to the projects table.
@@ -17,19 +17,19 @@ def add_project(name, db_metas=None):
 		name 	str
 				Name of the project
 		db_metas
-				set of DBMeta or None
+				iterable of DBMeta or None
 				optional. dbmetas that belong to this project.
 	Returns:
 		The new Project instance.
 	'''
-	return Project(name, db_metas)
+	return Project(name=name, d_b_metas=(d_b_metas if d_b_metas else ()))
 
 
 @db_session
-def add_database(name, date, project_name, num_training, num_test,
-	             num_validation, training_data_path, test_data_path,
-	             validation_data_path):
-	'''add_database
+def add_dataset(name, date, project_name, num_training, num_test,
+	            num_validation, training_data_path, test_data_path,
+	            validation_data_path):
+	'''add_dataset
 
 	Add the metadata for a new packaged dataset to the database. Will
 	also create a row in the project database if `project_name` doesn't
@@ -65,7 +65,7 @@ def add_database(name, date, project_name, num_training, num_test,
 	# make the DBMeta. autosaved by the @db_session
 	return DBMeta(name=name, date=date, project=project,
 				  num_training=num_training, num_validation=num_validation,
-				  num_test=num_test, training_data_path=training_data_path,
-				  test_data_path=test_data_path,
-				  validation_data_path=validation_data_path)
+				  num_test=num_test, training_data=training_data_path,
+				  test_data=test_data_path,
+				  validation_data=validation_data_path)
 

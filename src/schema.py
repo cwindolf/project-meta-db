@@ -17,6 +17,7 @@ class DBMeta(db.Entity):
     training_data = Required(str)
     test_data = Required(str)
 
+
 class Project(db.Entity):
     id = PrimaryKey(int, auto=True)
     d_b_metas = Set(DBMeta)
