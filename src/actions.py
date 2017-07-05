@@ -1,6 +1,8 @@
 from pony.orm import *
 from datetime import datetime
-from src.schema import db, Dataset, Project
+from scipy import imread
+import os.path
+from src.schema import *
 from config import DB_TYPE, HOST, USER, DATABASE, PASSWORD
 
 
@@ -70,3 +72,49 @@ def add_dataset(name, date, project_name, num_training, num_test,
 				  test_data=test_data_path,
 				  validation_data=validation_data_path)
 
+@db_session
+def add_images_to_dataset(relative_paths, dataset, channels=None, dimensions=None,
+						  cifs_mount='/media/data_cifs/'):
+	'''add_images_to_dataset
+
+	Given a list of relative paths, add them to the dataset specified by dataset.
+	This doesn't add any labels at the same time, yet.
+
+	Arguments:
+		relative_paths	[str]
+			A list of strings each pointing to a path relative to the cifs mount.
+		dataset 		str OR Dataset
+			If string typed, interpret as the name of a dataset.
+			If Dataset typed, add to that Dataset.
+		channels 		int OR None
+			How many channels in each image? If int, use that for every image.
+			If None, open the image and see how big its inner axis is.
+		dimensions      [int * int] OR None
+		    If list of tuples (w, h), use these as image dimensions.
+		    If none, open each image and find its dimension.
+		cifs_mount		str
+			If we need to open images cuz either channels or dimensions is None,
+			we'll look here.
+	Returns:
+		A list of the new `Image` instances.
+	'''
+	if not isinstance(dataset, Dataset):
+		dataset = Dataset.get(name=dataset)
+		if dataset is None:
+			raise ValueError('dataset should already exist')
+	images = []
+	for i in range(len(relative_paths)):
+		if channels is None or dimensions is None:
+			shape = scipy.imread(os.path.join(cifs_mount, relative_paths[i])).shape
+			if channels is None:
+				c = shape[2]
+			if dimensions is None:
+				d = shape[0:2]
+		elif channels:
+			c = channels
+		elif dimensions:
+			d = dimensions[i]
+		images.append(Image(dataset=dataset, rel_path=relative_paths[i],
+			                height=d[1], width=d[0], channels=c,
+			                extension=os.path.splitext(relative_paths[i])[1],
+			                labels=()))
