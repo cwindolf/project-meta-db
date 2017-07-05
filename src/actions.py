@@ -1,7 +1,8 @@
 from pony.orm import *
 from datetime import datetime
-from src.schema import db, DBMeta, Project
+from src.schema import db, Dataset, Project
 from config import DB_TYPE, HOST, USER, DATABASE, PASSWORD
+
 
 db.bind(DB_TYPE, host=HOST, user=USER, database=DATABASE, password=PASSWORD)
 db.generate_mapping()
@@ -17,7 +18,7 @@ def add_project(name, d_b_metas=None):
 		name 	str
 				Name of the project
 		db_metas
-				iterable of DBMeta or None
+				iterable of Dataset or None
 				optional. dbmetas that belong to this project.
 	Returns:
 		The new Project instance.
@@ -53,7 +54,7 @@ def add_dataset(name, date, project_name, num_training, num_test,
 				validation} data files.
 
 	Returns:
-		The new `DBMeta` instance.
+		The new `Dataset` instance.
 	'''
 	# check if `project_name` corresponds to a project that already exits.
 	project = Project.get(name=project_name)
@@ -62,8 +63,8 @@ def add_dataset(name, date, project_name, num_training, num_test,
 		project = add_project(project_name)
 	# if there's no date specified, do now.
 	date = date if date else datetime.now()
-	# make the DBMeta. autosaved by the @db_session
-	return DBMeta(name=name, date=date, project=project,
+	# make the Dataset. autosaved by the @db_session
+	return Dataset(name=name, date=date, project=project,
 				  num_training=num_training, num_validation=num_validation,
 				  num_test=num_test, training_data=training_data_path,
 				  test_data=test_data_path,

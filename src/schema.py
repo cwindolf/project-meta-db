@@ -5,7 +5,7 @@ from pony.orm import *
 db = Database()
 
 
-class DBMeta(db.Entity):
+class Dataset(db.Entity):
     id = PrimaryKey(int, auto=True)
     name = Required(str)
     date = Required(datetime)
@@ -16,9 +16,37 @@ class DBMeta(db.Entity):
     validation_data = Required(str)
     training_data = Required(str)
     test_data = Required(str)
+    images = Set('Image')
+    labels = Set('Label')
+    t_f_records = Set('TFRecord')
 
 
 class Project(db.Entity):
     id = PrimaryKey(int, auto=True)
-    d_b_metas = Set(DBMeta)
-    name = Required(str, unique=True)
+    datasets = Set(Dataset)
+    name = Required(str)
+
+
+class Image(db.Entity):
+    id = PrimaryKey(int, auto=True)
+    dataset = Required(Dataset)
+    rel_path = Required(str)
+    height = Required(int, size=32)
+    width = Required(int, size=32)
+    channels = Required(int, size=32)
+    extension = Required(str, 10)
+    labels = Set('Label')
+
+
+class Label(db.Entity):
+    id = PrimaryKey(int, auto=True)
+    image = Required(Image)
+    dataset = Required(Dataset)
+    type = Required(str)
+
+
+class TFRecord(db.Entity):
+    id = PrimaryKey(int, auto=True)
+    name = Required(str)
+    dataset = Required(Dataset)
+    date = Required(datetime)
