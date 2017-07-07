@@ -18,7 +18,7 @@ class Dataset(db.Entity):
     test_data = Required(str)
     images = Set('Image')
     labels = Set('Label')
-    t_f_records = Set('TFRecord')
+    t_f_recordses = Set('TFRecords')
 
 
 class Project(db.Entity):
@@ -43,9 +43,10 @@ class Label(db.Entity):
     image = Required(Image)
     dataset = Required(Dataset)
     type = Required(str)
+    rel_path = Required(str, unique=True)
 
 
-class TFRecord(db.Entity):
+class TFRecords(db.Entity):
     id = PrimaryKey(int, auto=True)
     name = Required(str)
     dataset = Required(Dataset)

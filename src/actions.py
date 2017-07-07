@@ -72,10 +72,11 @@ def add_dataset(name, date, project_name, num_training, num_test,
 				  test_data=test_data_path,
 				  validation_data=validation_data_path)
 
+
 @db_session
-def add_images_to_dataset(relative_paths, dataset, channels=None, dimensions=None,
-						  cifs_mount='/media/data_cifs/'):
-	'''add_images_to_dataset
+def add_images(relative_paths, dataset, channels=None, dimensions=None,
+			   cifs_mount='/media/data_cifs/'):
+	'''add_images
 
 	Given a list of relative paths, add them to the dataset specified by dataset.
 	This doesn't add any labels at the same time, yet.
@@ -118,3 +119,95 @@ def add_images_to_dataset(relative_paths, dataset, channels=None, dimensions=Non
 			                height=d[1], width=d[0], channels=c,
 			                extension=os.path.splitext(relative_paths[i])[1],
 			                labels=()))
+	return images
+
+
+@db_session
+def add_label(rel_path, image, label_type, dataset=None):
+	'''add_label
+	
+	Add a single label to a single image.
+
+	Arguments:
+		rel_path 		str
+			The path relative to the CIFS mount where this label lives.
+		image 			str or Image
+			Either an Image, or the relative path of an image that already
+			exists in the DB.
+		label_type 		str
+			Lowercase str like `depth` or `surface_normals`
+		dataset 		Dataset or None
+			If None, use `image`'s associated Dataset.
+	Returns:
+		The new Label object.
+	'''
+	if image is not None and not isinstance(image, Image):
+		image = Image.get(rel_path=image)
+	if image is None:
+		raise ValueError('`image` needs to exist in the database.')
+	if dataset is None:
+		dataset = image.dataset
+	return Label(rel_path=rel_path, image=image,
+		         dataset=dataset, type=label_type)
+
+
+@db_session
+def add_labels(relative_paths, dataset, label_type, images=None):
+	'''add_labels
+
+	Given a Dataset `dataset` and the relative paths on	the CIFS mount for its
+	labels, load up all of `dataset`'s images and associate each label here
+	to one of these images. In particular, ensure that `len(relative_paths)`
+	equals the number of images associated to `dataset`. Label-image pairs
+	will be chosen by zipping sorted arrays of relative paths, so a good
+	naming scheme should be chosen. For more control, look at `add_label`,
+	which manually associates a label to a given image, and is called by
+	this function.
+
+	On the other hand, if images is not None, and if it is a list of strings,
+	we assume that it is a list of pre-sorted relative paths corresponding
+	to images that already exist in the dataset. This function also accepts
+	a list of Image objects here, again assuming that it is sorted the
+	same way as `relative_paths`.
+
+	Arguments:
+		relative_paths		[str]
+			A list containing the relative path on the CIFS mount for each
+			label.
+		dataset 			str or Dataset
+			Either the name of an already-existing Dataset, or a Dataset
+			object, to which these labels will be added.
+		label_type 			str
+			What kind of labels are these? Use a lowercase string like
+			`depth`, `surface_normals`, etc.
+		images 				[str] or [Image]
+			A list of Image objects or relative paths to images which must
+			already exist in the DB. Assumed to be ordered the same way as
+			`relative_paths` so that images can be associated to the label at
+			the same position in `relative_paths`.
+	Returns:
+		A list of the new Label objects.
+	'''
+	# Get dataset in order
+	if not isinstance(dataset, Dataset):
+		dataset = Dataset.get(name=dataset)
+		if dataset is None:
+			raise ValueError('dataset should already exist')
+	# Get images in order
+	if images is None:
+		images = sorted(dataset.images, key=lambda i: i.rel_path)
+	elif not isinstance(images[0], Image):
+		# If not list of Image, interpret as list of rel paths
+		images = sorted(images)
+		for i in range(len(images)):
+			images[i] = Image.get(rel_path=images[i])
+			if images[i] is None:
+				raise ValueError('relative paths in `images` should correspond'
+					             ' to images that have already been stored')
+	# Make labels
+	if len(images) != len(relative_paths):
+		raise ValueError('The dataset should have an image for each label.')
+	return [add_label(rp, im, label_type, dataset)
+	        for rp, im in zip(relative_paths, images)]
+
+
